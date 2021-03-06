@@ -26,7 +26,7 @@
                                    <t t-set="sale_id" t-value="timesheets.project_id.sale_order_id.id"/>
                             <t t-set="sum" t-value="0.0"/>
 
-                                   <t t-foreach="request.env['sale.order'].search(['|',('id','=',sale_id),('project_id','=',sheet)])" t-as="sale_lines">
+                                   <t t-foreach="request.env['sale.order'].sudo().search(['|',('id','=',sale_id),('project_id','=',sheet)])" t-as="sale_lines">
                                                                   <t t-foreach="sale_lines.order_line" t-as="sale_line">
 
                                         <t t-set="sale" t-value="sale + sale_line.product_uom_qty" />
@@ -62,7 +62,7 @@
                              <t t-set="sale_id" t-value="timesheets.project_id.sale_order_id.id"/>
                             <t t-set="sum" t-value="0.0"/>
 
-                                   <t t-foreach="request.env['sale.order'].search(['|',('id','=',sale_id),('project_id','=',sheet)])" t-as="sale_lines">
+                                   <t t-foreach="request.env['sale.order'].sudo().search(['|',('id','=',sale_id),('project_id','=',sheet)])" t-as="sale_lines">
                                                                   <t t-foreach="sale_lines.order_line" t-as="sale_line">
 
                                         <t t-set="sale" t-value="sale + sale_line.product_uom_qty" />
@@ -100,7 +100,7 @@
                              <t t-set="sale_id" t-value="timesheets.project_id.sale_order_id.id"/>
                             <t t-set="sum" t-value="0.0"/>
 
-                                   <t t-foreach="request.env['sale.order'].search(['|',('id','=',sale_id),('project_id','=',sheet)])" t-as="sale_lines">
+                                   <t t-foreach="request.env['sale.order'].sudo().search(['|',('id','=',sale_id),('project_id','=',sheet)])" t-as="sale_lines">
                                                                   <t t-foreach="sale_lines.order_line" t-as="sale_line">
 
                                         <t t-set="sale" t-value="sale + sale_line.product_uom_qty" />
