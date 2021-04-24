@@ -124,12 +124,12 @@
                                             </td>
 
                                             <td style="border: 1px solid black;border-collapse:collapse;padding:3px;text-align:center;">
-                                                <span t-esc="line_ids['total_hours']"/>
+                                                <span t-esc="'{0:,.2f}'.format(line_ids['total_hours'])"/>
                                                 <t t-set="total_hourstotal" t-value="total_hourstotal + line_ids['total_hours']" />
                                             </td>
 
                                              <td style="border: 1px solid black;border-collapse:collapse;padding:3px;text-align:center;">
-                                                <span t-esc="line_ids['consumed_hours']"/>
+                                                <span t-esc="'{0:,.2f}'.format(line_ids['consumed_hours'])"/>
                                                  <t t-set="consumed_hourstotal" t-value="consumed_hourstotal + line_ids['consumed_hours']" />
                                             </td>
                                             <td style="border: 1px solid black;border-collapse:collapse;text-align:center;padding:3px;">

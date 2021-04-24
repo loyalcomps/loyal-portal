@@ -4,7 +4,7 @@
             id="portal_report_print_timesheets"
             model="portal.timesheet.wizard"
             report_type="qweb-pdf"
-            string="Timesheets"
+            string="Project Timesheet Analysis"
             name="portal_timesheet_report.report_timesheets"
             file="portal_timesheet_report.report_timesheets"
             menu="False"
