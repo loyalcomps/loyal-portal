@@ -25,14 +25,17 @@ class HrPayslip(models.Model):
                 raise ValidationError(_("""To cancel the Original Payslip the
                     Refunded Payslip needs to be canceled first!"""))
 
-            moves = payslip.mapped('move_id')
-            if moves.filtered(lambda x: x.state == 'posted'):
-                moves.filtered(lambda x: x.state == 'posted').button_cancel()
-                moves.unlink()
-            # if payslip.move_id.journal_id.update_posted:
-            #     payslip.move_id.button_cancel()
-            #     payslip.move_id.unlink()
+            # moves = payslip.mapped('move_id')
+            # if moves.filtered(lambda x: x.state == 'posted'):
+            #     moves.filtered(lambda x: x.state == 'posted').button_cancel()
+            #     moves.unlink()
+            if payslip.move_id.journal_id.update_posted:
+                payslip.move_id.button_cancel()
+                payslip.move_id.unlink()
             else:
                 payslip.move_id._reverse_moves()
+                payslip.move_id.ref = _('Reversal of: %s') % (payslip.name) if payslip.name else _('Reversal of: %s') % (
+                    payslip.move_id.name),
+
                 payslip.move_id = False
         return self.write({'state': 'cancel'})

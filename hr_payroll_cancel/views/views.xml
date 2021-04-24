@@ -1,5 +1,9 @@
 <odoo>
   <data>
+
+
+
+
     <record id="view_cancel_payslip_form" model="ir.ui.view">
         <field name="name">view.cancel.payslip.form</field>
         <field name="model">hr.payslip</field>
