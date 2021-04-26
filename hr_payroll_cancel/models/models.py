@@ -30,12 +30,32 @@ class HrPayslip(models.Model):
             #     moves.filtered(lambda x: x.state == 'posted').button_cancel()
             #     moves.unlink()
             if payslip.move_id.journal_id.update_posted:
-                payslip.move_id.button_cancel()
-                payslip.move_id.unlink()
+                if payslip.move_id.state=='draft':
+                    payslip.move_id.button_cancel()
+                    payslip.move_id.unlink()
             else:
-                payslip.move_id._reverse_moves()
-                payslip.move_id.ref = _('Reversal of: %s') % (payslip.name) if payslip.name else _('Reversal of: %s') % (
-                    payslip.move_id.name),
-
-                payslip.move_id = False
+                if payslip.move_id.state == 'draft':
+                    payslip.move_id.button_cancel()
+                    payslip.move_id.unlink()
+                elif payslip.move_id.state == 'posted':
+                    self.reverse_payslip_posted_entry()
+                    payslip.move_id = False
         return self.write({'state': 'cancel'})
+
+    def reverse_payslip_posted_entry(self):
+        """This method is designed to be inherited.
+            For example, inherit it if you don't want to start the wizard in
+            some scenarios"""
+
+        # view = self.env.ref('account.view_account_move_reversal').id
+        for payslip in self:
+            wiz = self.env['account.move.reversal'].create(
+                {'move_id': payslip.move_id.id,
+                 'journal_id':payslip.journal_id.id,
+                 'date':payslip.date,
+                 'refund_method':'cancel'}
+            )
+            wiz.reverse_moves()
+
+        return
+       
