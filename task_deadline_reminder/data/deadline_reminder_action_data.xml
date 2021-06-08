@@ -13,7 +13,7 @@
                 <div class="page">
                     <div style="font-family: 'Lucica Grande', Ubuntu, Arial, Verdana, sans-serif; font-size: 12px; color: rgb(34, 34, 34); background-color: #FFF; ">
                         <p>Hello ${object.user_id.name},</p>
-                        <p> This Email Is To Remind  You That You Have Task As  Below Listed Which Are Due On Today. </p>
+                        <p> This Email Is To Remind  You That You Have Task As  Below Listed Which Are Due On Today and You Need To Attend . </p>
                     </div>
                     <div>
                        <table class="table table-condensed">
