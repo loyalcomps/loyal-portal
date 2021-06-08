@@ -25,22 +25,37 @@ class ReportTimesheet(models.AbstractModel):
 
             query = '''
 
-                                               select aa.partner_id as customer, 
+                                               select aa.partner_id as customer,
 		bb.total_hours as total_hours,
-		aa.consumed_hours as consumed_hours,		
+		aa.consumed_hours as consumed_hours,
 		(bb.total_hours-aa.consumed_hours) as balance
 		from
 
-(select sum(an.unit_amount) as consumed_hours ,an.partner_id from account_analytic_line as an 
-	inner join project_project as p on p.id= an.project_id
-	inner join sale_order as s on (s.id=p.sale_order_id)
-	left join sale_order_line as sl on s.id=sl.order_id
-	where an.task_id is not null 
- 	and an.partner_id =%s
-	group by an.partner_id) aa	
-	
+        (
+        (SELECT  CAST(FLOOR(SummedMinutes / 60) AS FLOAT) as hours,
+        mod(SummedMinutes,60) as minutes,
+        CAST(FLOOR(SummedMinutes / 60) AS FLOAT) + (mod(SummedMinutes,60)/ 100) as consumed_hours,
+		tt.partner_id
+FROM
+	(
+SELECT CAST (SUM((FLOOR(time_hours) * 60) + (time_hours - FLOOR(time_hours)) * 100) AS NUMERIC) as SummedMinutes,
+ t.partner_id from
+		(select
+(((((floor(an.unit_amount::numeric)::integer)*100)+((ABS(an.unit_amount) - FLOOR(ABS(an.unit_amount)))*60))/100)) as time_hours,
+	an.partner_id
+		 from account_analytic_line as an
+			inner join project_project as p on p.id= an.project_id
+			inner join sale_order as s on (s.id=p.sale_order_id)
+			left join sale_order_line as sl on s.id=sl.order_id
+			where an.task_id is not null
+ 			and an.partner_id =%s
+		)as t
+		group by t.partner_id)as tt)
+
+        ) aa
+
 	left join
-	
+
 (select m.partner_id,sum(m.total_hours) as total_hours from
 
 (select distinct s.id,s.partner_id,(sl.product_uom_qty) as total_hours
@@ -49,9 +64,9 @@ class ReportTimesheet(models.AbstractModel):
 		left join project_project as p on p.sale_order_id= s.id
 		left join account_analytic_line as an on p.id= an.project_id
 	where s.project_id=an.project_id or s.id=p.sale_order_id
-	
+
 	union
-	 
+
 	select distinct s.id,s.partner_id,(sl.product_uom_qty) as total_hours
 		from sale_order_line as sl
 		left join sale_order as s on s.id=sl.order_id
@@ -59,13 +74,13 @@ class ReportTimesheet(models.AbstractModel):
 		left join account_analytic_line as an on p.id= an.project_id
 	where s.project_id=an.project_id or s.id=p.sale_order_id)as m
  where m.partner_id=%s
-	group by m.partner_id)bb 
-	on bb.partner_id=aa.partner_id 
+	group by m.partner_id)bb
+	on bb.partner_id=aa.partner_id
 
                                   '''
 
             self.env.cr.execute(query, (
-                customer,customer
+                customer,customer,
             ))
             for row in self.env.cr.dictfetchall():
                 sl += 1
@@ -96,40 +111,56 @@ class ReportTimesheet(models.AbstractModel):
 
             query = '''
 
-                                                                       select aa.partner_id as customer, 
+                                                                       select aa.partner_id as customer,
                                 bb.total_hours as total_hours,
-                                aa.consumed_hours as consumed_hours,		
+                                aa.consumed_hours as consumed_hours,
                                 (bb.total_hours-aa.consumed_hours) as balance
                                 from
 
-                        (select sum(an.unit_amount) as consumed_hours ,an.partner_id from account_analytic_line as an 
-                            inner join project_project as p on p.id= an.project_id
-                            inner join sale_order as s on (s.id=p.sale_order_id)
-                            left join sale_order_line as sl on s.id=sl.order_id
-                            where an.task_id is not null 
-                            group by an.partner_id) aa	
+                        (
+SELECT  CAST(FLOOR(SummedMinutes / 60) AS FLOAT) as hours,
+        mod(SummedMinutes,60) as minutes,
+        CAST(FLOOR(SummedMinutes / 60) AS FLOAT) + (mod(SummedMinutes,60) / 100) as consumed_hours,
+		tt.partner_id
+FROM
+	(
+SELECT CAST (SUM((FLOOR(time_hours) * 60) + (time_hours - FLOOR(time_hours)) * 100) AS NUMERIC) as SummedMinutes,
+ t.partner_id from
+		(select
+(((((floor(an.unit_amount::numeric)::integer)*100)+((ABS(an.unit_amount) - FLOOR(ABS(an.unit_amount)))*60))/100)) as time_hours,
+	an.partner_id
+		 from account_analytic_line as an
+			inner join project_project as p on p.id= an.project_id
+			inner join sale_order as s on (s.id=p.sale_order_id)
+			left join sale_order_line as sl on s.id=sl.order_id
+			where an.task_id is not null
+
+		)as t
+		group by t.partner_id)as tt
+
+                        ) aa
 
                             left join
 
                         (select m.partner_id,sum(m.total_hours) as total_hours from
-                        
+
                         (select distinct s.id,s.partner_id,(sl.product_uom_qty) as total_hours
 		from sale_order_line as sl
 		left join sale_order as s on s.id=sl.order_id
 		left join project_project as p on p.sale_order_id= s.id
 		left join account_analytic_line as an on p.id= an.project_id
 	where s.project_id=an.project_id or s.id=p.sale_order_id
-	
+
 	union
-	 
+
 	select distinct s.id,s.partner_id,(sl.product_uom_qty) as total_hours
 		from sale_order_line as sl
 		left join sale_order as s on s.id=sl.order_id
 		left join project_project as p on p.id= s.project_id
 		left join account_analytic_line as an on p.id= an.project_id
 	where s.project_id=an.project_id or s.id=p.sale_order_id)as m
-                            group by m.partner_id)bb 
-                            on bb.partner_id=aa.partner_id 
+                            group by m.partner_id)bb
+                            on bb.partner_id=aa.partner_id
 
                                                           '''
 
