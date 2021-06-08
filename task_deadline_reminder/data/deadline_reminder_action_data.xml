@@ -32,7 +32,8 @@
                                         <td><span>${object.project_id.name}</span></td>
                                         <td><span>${object.date_deadline}</span></td>
                                         <td><span>${object.user_id.name}</span></td>
-                                        <td><a href=/web/login/>View Now</a></td>
+                                        <td><a href=                                        <td><a href=/>View Now</a></td>
+>View Now</a></td>
                                     </tr>
                              </tbody>
                        </table>
