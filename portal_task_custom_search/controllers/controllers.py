@@ -34,7 +34,7 @@ class CustomerPortal(CustomerPortal):
             'message': {'input': 'message', 'label': _('Search in Messages')},
             'customer': {'input': 'customer', 'label': _('Search in Customer')},
             'stage': {'input': 'stage', 'label': _('Search in Stages')},
-            # 'user': {'input': 'user', 'label': _('Search in Assigned to')},
+            'user': {'input': 'user', 'label': _('Search in Assigned to')},
             'all': {'input': 'all', 'label': _('Search in All')},
         }
         searchbar_groupby = {
@@ -84,8 +84,8 @@ class CustomerPortal(CustomerPortal):
                 search_domain = OR([search_domain, [('message_ids.body', 'ilike', search)]])
             if search_in in ('stage', 'all'):
                 search_domain = OR([search_domain, [('stage_id', 'ilike', search)]])
-            # if search_in in ('user', 'all'):
-            #     search_domain = OR([search_domain, [('user_id', 'ilike', search)]])
+            if search_in in ('user', 'all'):
+                search_domain = OR([search_domain, [('user_id', 'ilike', search)]])
             domain += search_domain
         # task count
         # user_obj=request.env['res.users']
