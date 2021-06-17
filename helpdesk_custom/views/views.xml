@@ -1,0 +1,47 @@
+<odoo>
+    <data>
+        <template id="portal_helpdesk_ticket_user_date_template" inherit_id="helpdesk.portal_helpdesk_ticket">
+            <xpath expr="//thead" position="replace">
+                <thead>
+                    <tr>
+                        <th class="text-right">Ref</th>
+                        <th class="w-100">Description</th>
+                        <th/>
+                        <th class="text-center">Reported on</th>
+<!--                        <th class="text-center">Deadline</th>-->
+                        <th class="text-center">Assigned to</th>
+                        <th class="text-center">Status</th>
+                    </tr>
+                </thead>
+            </xpath>
+            <xpath expr="//t[@t-foreach='tickets']/tr" position="replace">
+                <tr>
+                    <td class="text-right">
+                        <a t-attf-href="/helpdesk/ticket/#{ticket.id}">
+                            <small>#</small>
+                            <t t-esc="ticket.id"/>
+                        </a>
+                    </td>
+                    <td>
+                        <a t-attf-href="/helpdesk/ticket/#{ticket.id}">
+                            <span t-field="ticket.name"/>
+                        </a>
+                    </td>
+                    <td/>
+                    <td class="text-center">
+                        <span t-field="ticket.create_date" t-options='{"widget": "date"}'/>
+                    </td>
+<!--                    <td class="text-center">-->
+<!--                        <span t-field="ticket.sla_deadline" t-options='{"widget": "date"}'/>-->
+<!--                    </td>-->
+                    <td class="text-center">
+                        <span t-field="ticket.user_id.name"/>
+                    </td>
+                    <td class="text-center">
+                        <span class="badge badge-pill badge-info" t-field="ticket.stage_id.name"/>
+                    </td>
+                </tr>
+            </xpath>
+        </template>
+    </data>
+</odoo>
