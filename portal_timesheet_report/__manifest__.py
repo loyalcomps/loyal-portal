@@ -3,15 +3,14 @@
     'name': "portal_timesheet_report",
 
     'summary': """
-        Short (1 phrase/line) summary of the module's purpose, used as
-        subtitle on modules listing or apps.openerp.com""",
+        portal timesheet report""",
 
     'description': """
-        Long description of module's purpose
+        portal timesheet report
     """,
 
-    'author': "My Company",
-    'website': "http://www.yourcompany.com",
+    'author': "Loyal It Solutions PVT LTD",
+    'website': "http://www.loyalitsolutions.com",
 
     # Categories can be used to filter modules in modules listing
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml

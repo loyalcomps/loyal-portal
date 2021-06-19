@@ -28,27 +28,31 @@ class ReportTimesheet(models.AbstractModel):
                                                select aa.partner_id as customer,
 		bb.total_hours as total_hours,
 		aa.consumed_hours as consumed_hours,
-		(bb.total_hours-aa.consumed_hours) as balance
+		(bb.total_hours-aa.consumed_hours) as balance,
+		aa.name
 		from
 
         (
         (SELECT  CAST(FLOOR(SummedMinutes / 60) AS FLOAT) as hours,
         mod(SummedMinutes,60) as minutes,
         CAST(FLOOR(SummedMinutes / 60) AS FLOAT) + (mod(SummedMinutes,60)/ 100) as consumed_hours,
-		tt.partner_id
+		tt.partner_id,tt.name
 FROM
 	(
 SELECT CAST (SUM((FLOOR(time_hours) * 60) + (time_hours - FLOOR(time_hours)) * 100) AS NUMERIC) as SummedMinutes,
- t.partner_id from
+ t.partner_id,max(t.name) as name from
 		(select
 (((((floor(an.unit_amount::numeric)::integer)*100)+((ABS(an.unit_amount) - FLOOR(ABS(an.unit_amount)))*60))/100)) as time_hours,
-	an.partner_id
+	s.partner_id,r.name
 		 from account_analytic_line as an
 			inner join project_project as p on p.id= an.project_id
 			inner join sale_order as s on (s.id=p.sale_order_id)
 			left join sale_order_line as sl on s.id=sl.order_id
-			where an.task_id is not null
- 			and an.partner_id =%s
+			LEFT JOIN product_product product ON (product.id=sl.product_id)
+            LEFT JOIN product_template pt ON (pt.id = product.product_tmpl_id)
+			left join res_partner as r on r.id=s.partner_id
+			where an.task_id is not null and pt.recurring_invoice<>true
+ 			and s.partner_id =%s
 		)as t
 		group by t.partner_id)as tt)
 
@@ -56,36 +60,47 @@ SELECT CAST (SUM((FLOOR(time_hours) * 60) + (time_hours - FLOOR(time_hours)) * 1
 
 	left join
 
-(select m.partner_id,sum(m.total_hours) as total_hours from
+(select m.partner_id,sum(m.total_hours) as total_hours,max(m.name) as name from
 
-(select distinct s.id,s.partner_id,(sl.product_uom_qty) as total_hours
-		from sale_order_line as sl
-		left join sale_order as s on s.id=sl.order_id
-		left join project_project as p on p.sale_order_id= s.id
-		left join account_analytic_line as an on p.id= an.project_id
-	where s.project_id=an.project_id or s.id=p.sale_order_id
+(select distinct s.id,r.name,s.partner_id,(sl.product_uom_qty) as total_hours
+						 from account_analytic_line as an
+						 left join project_project as p on an.project_id=p.id
+						 left join sale_order as s on s.id=p.sale_order_id
+						 left join sale_order_line as sl on sl.order_id=s.id
+						 LEFT JOIN product_product product ON (product.id=sl.product_id)
+                        LEFT JOIN product_template pt ON (pt.id = product.product_tmpl_id)
+						 left join res_partner as r on r.id=s.partner_id
+						 left join uom_uom as u on sl.product_uom=u.id
+			where u.name='Hours' and u.timesheet_widget='float_time' and pt.recurring_invoice<>true
+			and s.partner_id=%s
 
 	union
 
-	select distinct s.id,s.partner_id,(sl.product_uom_qty) as total_hours
+	select distinct s.id,r.name,s.partner_id,(sl.product_uom_qty) as total_hours
 		from sale_order_line as sl
 		left join sale_order as s on s.id=sl.order_id
 		left join project_project as p on p.id= s.project_id
 		left join account_analytic_line as an on p.id= an.project_id
-	where s.project_id=an.project_id or s.id=p.sale_order_id)as m
- where m.partner_id=%s
+		left join res_partner as r on r.id=s.partner_id
+		left join uom_uom as u on sl.product_uom=u.id
+		LEFT JOIN product_product product ON (product.id=sl.product_id)
+        LEFT JOIN product_template pt ON (pt.id = product.product_tmpl_id)
+	where s.partner_id=%s and u.name='Hours' and u.timesheet_widget='float_time'
+	 and pt.recurring_invoice<>true and
+	s.project_id=an.project_id or s.id=p.sale_order_id)as m 
 	group by m.partner_id)bb
-	on bb.partner_id=aa.partner_id
+	on bb.partner_id=aa.partner_id order by aa.name
 
                                   '''
 
             self.env.cr.execute(query, (
-                customer,customer,
+                customer,customer,customer,
             ))
             for row in self.env.cr.dictfetchall():
                 sl += 1
 
                 customer = row['customer'] if row['customer'] else " "
+                name = row['name'] if row['name'] else " "
                 total_hours = row['total_hours'] if row['total_hours'] else 0
                 consumed_hours = row['consumed_hours'] if row['consumed_hours'] else 0
                 balance = row['balance'] if row['balance'] else 0
@@ -93,7 +108,8 @@ SELECT CAST (SUM((FLOOR(time_hours) * 60) + (time_hours - FLOOR(time_hours)) * 1
 
                 res = {
                     'sl_no': sl,
-                    'customer': self.env['res.partner'].browse(customer).name if customer else " ",
+                    # 'customer': self.env['res.partner'].browse(customer).name if customer else " ",
+                    'customer': name if name else " ",
                     'total_hours': total_hours if total_hours else 0.0,
                     'consumed_hours': consumed_hours if consumed_hours else 0.0,
                     'balance': balance if balance else 0.0,
@@ -111,29 +127,33 @@ SELECT CAST (SUM((FLOOR(time_hours) * 60) + (time_hours - FLOOR(time_hours)) * 1
 
             query = '''
 
-                                                                       select aa.partner_id as customer,
+                                                                  select aa.partner_id as customer,
                                 bb.total_hours as total_hours,
                                 aa.consumed_hours as consumed_hours,
-                                (bb.total_hours-aa.consumed_hours) as balance
+                                (bb.total_hours-aa.consumed_hours) as balance,
+								aa.name as name
                                 from
 
                         (
 SELECT  CAST(FLOOR(SummedMinutes / 60) AS FLOAT) as hours,
         mod(SummedMinutes,60) as minutes,
         CAST(FLOOR(SummedMinutes / 60) AS FLOAT) + (mod(SummedMinutes,60) / 100) as consumed_hours,
-		tt.partner_id
+		tt.partner_id,tt.name
 FROM
 	(
 SELECT CAST (SUM((FLOOR(time_hours) * 60) + (time_hours - FLOOR(time_hours)) * 100) AS NUMERIC) as SummedMinutes,
- t.partner_id from
+ t.partner_id,max(t.name) as name from
 		(select
 (((((floor(an.unit_amount::numeric)::integer)*100)+((ABS(an.unit_amount) - FLOOR(ABS(an.unit_amount)))*60))/100)) as time_hours,
-	an.partner_id
+	s.partner_id,r.name
 		 from account_analytic_line as an
 			inner join project_project as p on p.id= an.project_id
 			inner join sale_order as s on (s.id=p.sale_order_id)
 			left join sale_order_line as sl on s.id=sl.order_id
-			where an.task_id is not null
+			LEFT JOIN product_product product ON (product.id=sl.product_id)
+        LEFT JOIN product_template pt ON (pt.id = product.product_tmpl_id)
+		 	left join res_partner as r on r.id=s.partner_id
+			where an.task_id is not null and pt.recurring_invoice<>true
 
 		)as t
 		group by t.partner_id)as tt
@@ -142,25 +162,35 @@ SELECT CAST (SUM((FLOOR(time_hours) * 60) + (time_hours - FLOOR(time_hours)) * 1
 
                             left join
 
-                        (select m.partner_id,sum(m.total_hours) as total_hours from
+                        (select m.partner_id,sum(m.total_hours) as total_hours,max(m.name) as name from
 
-                        (select distinct s.id,s.partner_id,(sl.product_uom_qty) as total_hours
-		from sale_order_line as sl
-		left join sale_order as s on s.id=sl.order_id
-		left join project_project as p on p.sale_order_id= s.id
-		left join account_analytic_line as an on p.id= an.project_id
-	where s.project_id=an.project_id or s.id=p.sale_order_id
+                        (select distinct s.id,r.name,s.partner_id,(sl.product_uom_qty) as total_hours from account_analytic_line as an
+						 left join project_project as p on an.project_id=p.id
+						 left join sale_order as s on s.id=p.sale_order_id
+						 left join sale_order_line as sl on sl.order_id=s.id
+						 LEFT JOIN product_product product ON (product.id=sl.product_id)
+                        LEFT JOIN product_template pt ON (pt.id = product.product_tmpl_id)
+						 left join res_partner as r on r.id=s.partner_id
+						 left join uom_uom as u on sl.product_uom=u.id
+						 where u.name='Hours' and u.timesheet_widget='float_time' and pt.recurring_invoice<>true
 
 	union
 
-	select distinct s.id,s.partner_id,(sl.product_uom_qty) as total_hours
+	select distinct s.id,r.name,s.partner_id,(sl.product_uom_qty) as total_hours
 		from sale_order_line as sl
 		left join sale_order as s on s.id=sl.order_id
 		left join project_project as p on p.id= s.project_id
 		left join account_analytic_line as an on p.id= an.project_id
-	where s.project_id=an.project_id or s.id=p.sale_order_id)as m
+		left join res_partner as r on r.id=s.partner_id
+		left join uom_uom as u on sl.product_uom=u.id
+		LEFT JOIN product_product product ON (product.id=sl.product_id)
+        LEFT JOIN product_template pt ON (pt.id = product.product_tmpl_id)
+	where u.name='Hours' and u.timesheet_widget='float_time' 
+	and pt.recurring_invoice<>true and
+	s.project_id=an.project_id or s.id=p.sale_order_id)as m
                             group by m.partner_id)bb
-                            on bb.partner_id=aa.partner_id
+                            on bb.partner_id=aa.partner_id order by aa.name
+
 
                                                           '''
 
@@ -171,13 +201,15 @@ SELECT CAST (SUM((FLOOR(time_hours) * 60) + (time_hours - FLOOR(time_hours)) * 1
                 sl += 1
 
                 customer = row['customer'] if row['customer'] else " "
+                name = row['name'] if row['name'] else " "
                 total_hours = row['total_hours'] if row['total_hours'] else 0
                 consumed_hours = row['consumed_hours'] if row['consumed_hours'] else 0
                 balance = row['balance'] if row['balance'] else 0
 
                 res = {
                     'sl_no': sl,
-                    'customer': self.env['res.partner'].browse(customer).name if customer else " ",
+                    # 'customer': self.env['res.partner'].browse(customer).name if customer else " ",
+                    'customer': name if name else " ",
                     'total_hours': total_hours if total_hours else 0.0,
                     'consumed_hours': consumed_hours if consumed_hours else 0.0,
                     'balance': balance if balance else 0.0,
