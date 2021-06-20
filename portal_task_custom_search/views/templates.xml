@@ -1,6 +1,6 @@
 <odoo>
     <data>
-        <template id="assets_frontend" inherit_id="web_editor.assets_frontend" name="Portal task custom searchAssets" priority="15">
+        <template id="assets_frontend" inherit_id="web_editor.assets_frontend" name="Portal task custom searchAssets">
             <xpath expr="//link[last()]" position="after">
                 <link rel="stylesheet" type="text/scss" href="/portal_task_custom_search/static/src/scss/portal.scss"/>
             </xpath>
